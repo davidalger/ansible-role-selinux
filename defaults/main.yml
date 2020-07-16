@@ -1,0 +1,5 @@
+---
+selinux_booleans: []
+selinux_fcontexts: []
+selinux_ports: []
+selinux_logins: []

@@ -1,0 +1,66 @@
+---
+- name: Install SELinux python2 tools for EL 7
+  package:
+    name:
+      - libselinux-python
+      - policycoreutils-python
+    state: present
+  when: (ansible_distribution_major_version|int <= 7) and (ansible_python_version is version('3', '<'))
+
+- name: Install SELinux python3 tools for EL 7
+  package:
+    name:
+      - libselinux-python3
+      - policycoreutils-python3
+    state: present
+  when: (ansible_distribution_major_version|int <= 7) and (ansible_python_version is version('3', '>='))
+
+- name: Install SELinux python3 tools for EL 8
+  package:
+    name:
+      - python3-libselinux
+      - policycoreutils-python-utils
+    state: present
+  when: (ansible_distribution_major_version|int >= 8)
+
+- name: Refresh facts ensuring SELinux status is available
+  setup:
+    filter: ansible_selinux
+
+- name: Set SELinux boolean states
+  seboolean:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+    persistent: "{{ item.persistent|default('no') }}"
+  with_items: "{{ selinux_booleans }}"
+  when: ('status' in ansible_selinux) and (ansible_selinux.status != 'disabled')
+
+- name: Set SELinux file context mapping definitions
+  sefcontext:
+    target: "{{ item.target }}"
+    setype: "{{ item.setype }}"
+    ftype: "{{ item.ftype | default('a') }}"
+    selevel: "{{ item.selevel | default(omit) }}"
+    seuser: "{{ item.seuser | default(omit) }}"
+    state: "{{ item.state | default('present') }}"
+  with_items: "{{ selinux_fcontexts }}"
+  when: ('status' in ansible_selinux) and (ansible_selinux.status != 'disabled')
+
+- name: Set SELinux port type definitions
+  seport:
+    ports: "{{ item.ports }}"
+    proto: "{{ item.proto }}"
+    setype: "{{ item.setype }}"
+    state: "{{ item.state | default(present) }}"
+  with_items: "{{ selinux_ports }}"
+  when: ('status' in ansible_selinux) and (ansible_selinux.status != 'disabled')
+
+- name: Set linux user to SELinux user mappings
+  selogin:
+    login: "{{ item.login }}"
+    seuser: "{{ item.seuser }}"
+    selevel: "{{ item.selevel | default('s0') }}"
+    state: "{{ item.state | default(present) }}"
+    reload: "{{ item.reload | default(False) }}"
+  with_items: "{{ selinux_logins }}"
+  when: ('status' in ansible_selinux) and (ansible_selinux.status != 'disabled')
