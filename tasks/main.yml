@@ -64,3 +64,11 @@
     reload: "{{ item.reload | default(False) }}"
   with_items: "{{ selinux_logins }}"
   when: ('status' in ansible_selinux) and (ansible_selinux.status != 'disabled')
+
+- name: Set SELinux permissive domains policy
+  selinux_permissive:
+    domain: "{{ item.domain }}"
+    permissive: "{{ item.permissive }}"
+    no_reload: "{{ item.no_reload | default(False) }}"
+  with_items: "{{ selinux_permissives }}"
+  when: ('status' in ansible_selinux) and (ansible_selinux.status != 'disabled')
